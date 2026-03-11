@@ -6,111 +6,106 @@ import "./App.css";
 
 function App() {
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [plants, setPlants] = useState([]);
-  const [pots, setPots] = useState([]);
+const [plants,setPlants] = useState([]);
+const [pots,setPots] = useState([]);
+const [loggedIn,setLoggedIn] = useState(false);
 
-  // LOAD DATA FROM DATABASE
-  const loadItems = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/items");
-      const data = await res.json();
+useEffect(()=>{
+const auth = localStorage.getItem("loggedIn");
+if(auth){
+setLoggedIn(true);
+}
+loadItems();
+},[]);
 
-      setPlants(data.filter(item => item.type === "plant"));
-      setPots(data.filter(item => item.type === "pot"));
-    } catch (error) {
-      console.error("Error loading inventory:", error);
-    }
-  };
+const loadItems = async ()=>{
 
-  useEffect(() => {
-    if (loggedIn) {
-      loadItems();
-    }
-  }, [loggedIn]);
+const res = await fetch("/items");
+const data = await res.json();
 
-  // ADD ITEM
-  const addItem = async (item, type) => {
+setPlants(data.filter(i=>i.type==="plant"));
+setPots(data.filter(i=>i.type==="pot"));
 
-    const formData = new FormData();
+};
 
-    formData.append("name", item.name);
-    formData.append("type", type);
-    formData.append("date", item.date);
-    formData.append("delivered", item.delivered);
+// ADD ITEM
+const addItem = async(item,type)=>{
 
-    if (item.photo) {
-      formData.append("photo", item.photo);
-    }
+const formData = new FormData();
 
-    await fetch("http://localhost:5000/add", {
-      method: "POST",
-      body: formData
-    });
+formData.append("name",item.name);
+formData.append("type",type);
+formData.append("date",item.date);
+formData.append("delivered",item.delivered);
+formData.append("photo",item.photo);
 
-    loadItems();
-  };
+await fetch("/add",{
+method:"POST",
+body:formData
+});
 
-  // SELL ITEM (BULK SUPPORT)
-  const sellItem = async (id, quantity) => {
+loadItems();
 
-    const qty = quantity && quantity > 0 ? quantity : 1;
+};
 
-    await fetch(`http://localhost:5000/sell/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        quantity: qty
-      })
-    });
+// SELL
+const sellItem = async(id,quantity)=>{
 
-    loadItems();
-  };
+await fetch(`/sell/${id}`,{
+method:"PUT",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({quantity})
+});
 
-  // DELETE ITEM
-  const deleteItem = async (id) => {
+loadItems();
 
-    await fetch(`http://localhost:5000/delete/${id}`, {
-      method: "DELETE"
-    });
+};
 
-    loadItems();
-  };
+// DELETE
+const deleteItem = async(id)=>{
 
-  // SHOW LOGIN PAGE FIRST
-  if (!loggedIn) {
-    return <Login onLogin={setLoggedIn} />;
-  }
+await fetch(`/delete/${id}`,{
+method:"DELETE"
+});
 
-  return (
+loadItems();
 
-    <div className="app">
+};
 
-      <h1>🌱 AshokVatika Nursery Inventory</h1>
+if(!loggedIn){
+return <Login setLoggedIn={setLoggedIn}/>;
+}
 
-      <AddItem addItem={addItem} />
+return(
 
-      <h2>Plants</h2>
+<div className="app">
 
-      <InventoryTable
-        data={plants}
-        sellItem={sellItem}
-        deleteItem={deleteItem}
-      />
+<h1>🌱 AshokVatika Nursery Inventory</h1>
 
-      <h2>Pots</h2>
+<AddItem addItem={addItem}/>
 
-      <InventoryTable
-        data={pots}
-        sellItem={sellItem}
-        deleteItem={deleteItem}
-      />
+<h2>Plants</h2>
 
-    </div>
+<InventoryTable
+data={plants}
+sellItem={sellItem}
+deleteItem={deleteItem}
+/>
 
-  );
+<h2>Pots</h2>
+
+<InventoryTable
+data={pots}
+sellItem={sellItem}
+deleteItem={deleteItem}
+/>
+
+</div>
+
+);
+
 }
 
 export default App;

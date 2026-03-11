@@ -1,37 +1,43 @@
+import React,{useState} from "react";
 
-import React,{useState} from "react"
+function Login({setLoggedIn}){
 
-function Login({onLogin}){
+const [username,setUsername] = useState("");
+const [password,setPassword] = useState("");
 
-const [username,setUsername] = useState("")
-const [password,setPassword] = useState("")
+const handleLogin = async()=>{
 
-const login = async ()=>{
-
-const res = await fetch("/login", {
+const res = await fetch("/login",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({username,password})
+body:JSON.stringify({
+username,
+password
 })
+});
 
-if(res.status === 200){
-onLogin(true)
+const data = await res.json();
+
+if(data.success){
+localStorage.setItem("loggedIn",true);
+setLoggedIn(true);
 }else{
-alert("Invalid login")
+alert("Invalid login");
 }
 
-}
+};
 
 return(
 
-<div style={{textAlign:"center",marginTop:"100px"}}>
+<div style={{textAlign:"center",marginTop:"150px"}}>
 
 <h2>Nursery Inventory Login</h2>
 
 <input
 placeholder="Username"
+value={username}
 onChange={(e)=>setUsername(e.target.value)}
 />
 
@@ -40,19 +46,18 @@ onChange={(e)=>setUsername(e.target.value)}
 <input
 type="password"
 placeholder="Password"
+value={password}
 onChange={(e)=>setPassword(e.target.value)}
 />
 
 <br/><br/>
 
-<button onClick={login}>
-Login
-</button>
+<button onClick={handleLogin}>Login</button>
 
 </div>
 
-)
+);
 
 }
 
-export default Login
+export default Login;

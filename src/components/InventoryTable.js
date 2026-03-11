@@ -2,89 +2,106 @@ import React, { useState } from "react";
 
 function InventoryTable({ data, sellItem, deleteItem }) {
 
-const [sellQty,setSellQty] = useState({});
+  const [sellQty, setSellQty] = useState({});
 
-const handleChange = (id,value)=>{
-setSellQty({
-...sellQty,
-[id]: value
-});
-};
+  const handleChange = (id, value) => {
 
-return(
+    setSellQty({
+      ...sellQty,
+      [id]: value
+    });
 
-<table>
+  };
 
-<thead>
-<tr>
-<th>Photo</th>
-<th>Name</th>
-<th>Date</th>
-<th>Delivered</th>
-<th>Sold</th>
-<th>Stock</th>
-<th>Sell Qty</th>
-<th>Action</th>
-</tr>
-</thead>
+  return (
 
-<tbody>
+    <table>
 
-{data.map(item=>(
-<tr key={item.id}>
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Name</th>
+          <th>Date</th>
+          <th>Delivered</th>
+          <th>Sold</th>
+          <th>Stock</th>
+          <th>Sell Qty</th>
+          <th>Action</th>
+        </tr>
+      </thead>
 
-<td>
-{item.photo && (
-<img
-src={`http://localhost:5000/uploads/${item.photo}`}
-width="60"
-alt={item.name}
-/>
-)}
-</td>
+      <tbody>
 
-<td>{item.name}</td>
-<td>{item.date}</td>
-<td>{item.delivered}</td>
-<td>{item.sold}</td>
-<td>{item.stock}</td>
+        {data.map((item) => (
 
-<td>
-<input
-type="number"
-placeholder="Qty"
-style={{width:"70px"}}
-onChange={(e)=>handleChange(item.id,e.target.value)}
-/>
-</td>
+          <tr key={item.id}>
 
-<td>
+            <td>
+              {item.photo ? (
+                <img
+                  src={`/uploads/${item.photo}`}
+                  width="60"
+                  alt={item.name}
+                />
+              ) : (
+                "No Image"
+              )}
+            </td>
 
-<button
-onClick={()=>sellItem(item.id, Number(sellQty[item.id] || 1))}
-style={{marginRight:"10px"}}
->
-Sell
-</button>
+            <td>{item.name}</td>
+            <td>{item.date}</td>
+            <td>{item.delivered}</td>
+            <td>{item.sold}</td>
+            <td>{item.stock}</td>
 
-<button
-onClick={()=>deleteItem(item.id)}
-style={{background:"red",color:"white"}}
->
-Delete
-</button>
+            <td>
+              <input
+                type="number"
+                min="1"
+                placeholder="Qty"
+                style={{ width: "70px" }}
+                value={sellQty[item.id] || ""}
+                onChange={(e) => handleChange(item.id, e.target.value)}
+              />
+            </td>
 
-</td>
+            <td>
 
-</tr>
-))}
+              <button
+                onClick={() =>
+                  sellItem(item.id, Number(sellQty[item.id] || 1))
+                }
+                style={{
+                  marginRight: "10px",
+                  background: "green",
+                  color: "white"
+                }}
+              >
+                Sell
+              </button>
 
-</tbody>
+              <button
+                onClick={() => deleteItem(item.id)}
+                style={{
+                  background: "red",
+                  color: "white"
+                }}
+              >
+                Delete
+              </button>
 
-</table>
+            </td>
 
-)
+          </tr>
+
+        ))}
+
+      </tbody>
+
+    </table>
+
+  );
 
 }
 
-export default InventoryTable
+export default InventoryTable;
