@@ -2,13 +2,22 @@ const express = require("express")
 const cors = require("cors")
 const sqlite3 = require("sqlite3").verbose()
 const multer = require("multer")
+const path = require("path")
+const fs = require("fs")
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+
+// Ensure uploads folder exists
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads")
+}
+
 app.use("/uploads", express.static("uploads"))
 
+// DATABASE
 const db = new sqlite3.Database("./server/database.db")
 
 // CREATE TABLE
@@ -74,7 +83,7 @@ res.json(rows)
 })
 
 
-// SELL ITEM (BULK SUPPORT)
+// SELL ITEM
 app.put("/sell/:id", (req, res) => {
 
 const id = req.params.id
@@ -120,34 +129,44 @@ res.send("Item deleted")
 })
 
 
-
 // ADMIN LOGIN
 app.post("/login", (req, res) => {
 
-const { username, password } = req.body;
+const { username, password } = req.body
 
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "ashokvatika123";
+const ADMIN_USERNAME = "admin"
+const ADMIN_PASSWORD = "ashokvatika123"
 
-if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+if(username === ADMIN_USERNAME && password === ADMIN_PASSWORD){
 
 res.json({
 success: true,
 message: "Login successful"
-});
+})
 
-} else {
+}else{
 
 res.status(401).json({
 success: false,
 message: "Invalid login"
-});
+})
 
 }
 
-});
+})
+
+
+// SERVE REACT BUILD
+app.use(express.static(path.join(__dirname, "../build")))
+
+app.get("*", (req, res) => {
+res.sendFile(path.join(__dirname, "../build/index.html"))
+})
+
 
 // START SERVER
-app.listen(5000, () => {
-console.log("Server running on port 5000")
+const PORT = process.env.PORT || 5000
+
+app.listen(PORT, () => {
+console.log("Server running on port " + PORT)
 })
