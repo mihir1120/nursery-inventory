@@ -151,13 +151,21 @@ app.post("/login", (req, res) => {
 
 })
 
-// SERVE REACT BUILD
-app.use(express.static(path.join(__dirname, "../build")))
 
-app.get("/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../build/index.html"))
+// ===============================
+// SERVE REACT BUILD (RENDER SAFE)
+// ===============================
+
+const buildPath = path.join(__dirname, "../build")
+
+app.use(express.static(buildPath))
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(buildPath, "index.html"))
 })
 
+
+// START SERVER
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
