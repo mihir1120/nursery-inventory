@@ -17,7 +17,6 @@ if (!fs.existsSync("uploads")) {
 
 app.use("/uploads", express.static("uploads"))
 
-// DATABASE
 const db = new sqlite3.Database("./server/database.db")
 
 // CREATE TABLE
@@ -34,7 +33,6 @@ photo TEXT
 )
 `)
 
-
 // FILE STORAGE
 const storage = multer.diskStorage({
 destination: "uploads/",
@@ -44,7 +42,6 @@ cb(null, Date.now() + "-" + file.originalname)
 })
 
 const upload = multer({ storage })
-
 
 // ADD ITEM
 app.post("/add", upload.single("photo"), (req, res) => {
@@ -66,8 +63,7 @@ res.send("Item added")
 
 })
 
-
-// GET ALL ITEMS
+// GET ITEMS
 app.get("/items", (req, res) => {
 
 db.all("SELECT * FROM inventory", (err, rows) => {
@@ -82,8 +78,7 @@ res.json(rows)
 
 })
 
-
-// SELL ITEM
+// SELL
 app.put("/sell/:id", (req, res) => {
 
 const id = req.params.id
@@ -107,8 +102,7 @@ res.send("Items sold")
 
 })
 
-
-// DELETE ITEM
+// DELETE
 app.delete("/delete/:id", (req, res) => {
 
 const id = req.params.id
@@ -128,8 +122,7 @@ res.send("Item deleted")
 
 })
 
-
-// ADMIN LOGIN
+// LOGIN
 app.post("/login", (req, res) => {
 
 const { username, password } = req.body
@@ -155,7 +148,6 @@ message: "Invalid login"
 
 })
 
-
 // SERVE REACT BUILD
 app.use(express.static(path.join(__dirname, "../build")))
 
@@ -163,8 +155,6 @@ app.get("*", (req, res) => {
 res.sendFile(path.join(__dirname, "../build/index.html"))
 })
 
-
-// START SERVER
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
