@@ -10,15 +10,10 @@ const [plants,setPlants] = useState([]);
 const [pots,setPots] = useState([]);
 const [loggedIn,setLoggedIn] = useState(false);
 
-useEffect(()=>{
-const auth = localStorage.getItem("loggedIn");
-if(auth){
-setLoggedIn(true);
-}
-loadItems();
-},[]);
-
+// LOAD ITEMS FUNCTION
 const loadItems = async ()=>{
+
+try{
 
 const res = await fetch("/items");
 const data = await res.json();
@@ -26,7 +21,32 @@ const data = await res.json();
 setPlants(data.filter(i=>i.type==="plant"));
 setPots(data.filter(i=>i.type==="pot"));
 
+}catch(err){
+console.log("Error loading items",err);
+}
+
 };
+
+useEffect(()=>{
+
+const auth = localStorage.getItem("loggedIn");
+
+if(auth){
+setLoggedIn(true);
+}
+
+// FIRST LOAD
+loadItems();
+
+// AUTO REFRESH EVERY 3 SECONDS
+const interval = setInterval(()=>{
+loadItems();
+},3000);
+
+return ()=>clearInterval(interval);
+
+},[]);
+
 
 // ADD ITEM
 const addItem = async(item,type)=>{
@@ -48,7 +68,8 @@ loadItems();
 
 };
 
-// SELL
+
+// SELL ITEM
 const sellItem = async(id,quantity)=>{
 
 await fetch(`/sell/${id}`,{
@@ -63,7 +84,8 @@ loadItems();
 
 };
 
-// DELETE
+
+// DELETE ITEM
 const deleteItem = async(id)=>{
 
 await fetch(`/delete/${id}`,{
@@ -74,17 +96,48 @@ loadItems();
 
 };
 
+
+// LOGOUT
+const logout = ()=>{
+
+localStorage.removeItem("loggedIn");
+setLoggedIn(false);
+
+};
+
+
+// LOGIN SCREEN
 if(!loggedIn){
 return <Login setLoggedIn={setLoggedIn}/>;
 }
+
 
 return(
 
 <div className="app">
 
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+
 <h1>🌱 AshokVatika Nursery Inventory</h1>
 
+<button
+onClick={logout}
+style={{
+background:"red",
+color:"white",
+border:"none",
+padding:"8px 15px",
+cursor:"pointer"
+}}
+>
+Logout
+</button>
+
+</div>
+
+
 <AddItem addItem={addItem}/>
+
 
 <h2>Plants</h2>
 
@@ -94,6 +147,7 @@ sellItem={sellItem}
 deleteItem={deleteItem}
 />
 
+
 <h2>Pots</h2>
 
 <InventoryTable
@@ -101,6 +155,7 @@ data={pots}
 sellItem={sellItem}
 deleteItem={deleteItem}
 />
+
 
 </div>
 
