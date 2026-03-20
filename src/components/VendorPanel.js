@@ -1,96 +1,66 @@
 import React, { useState, useEffect } from "react";
 
-function VendorPanel(){
+function VendorPanel({ item, updateVendor }) {
 
-const [vendors,setVendors] = useState([]);
-const [name,setName] = useState("");
-const [phone,setPhone] = useState("");
-const [editingId,setEditingId] = useState(null);
+  const [data, setData] = useState({});
 
-const loadVendors = async ()=>{
-const res = await fetch("/vendors");
-const data = await res.json();
-setVendors(data);
-};
+  useEffect(()=>{
+    setData(item);
+  },[item]);
 
-useEffect(()=>{
-loadVendors();
-},[]);
+  if(!item) return null;
 
-// ADD / UPDATE
-const saveVendor = async ()=>{
+  const handleChange = (field, value) => {
+    setData({
+      ...data,
+      [field]: value
+    });
+  };
 
-if(editingId){
+  const save = () => {
+    updateVendor(data);
+  };
 
-await fetch(`/vendors/${editingId}`,{
-method:"PUT",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,phone})
-});
+  return (
 
-}else{
+    <div>
 
-await fetch("/vendors",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,phone})
-});
+      <h3>{item.name}</h3>
 
-}
+      <input
+        placeholder="Vendor Name"
+        value={data.vendor_name || ""}
+        onChange={(e)=>handleChange("vendor_name",e.target.value)}
+      />
 
-setName("");
-setPhone("");
-setEditingId(null);
+      <input
+        placeholder="Phone"
+        value={data.vendor_phone || ""}
+        onChange={(e)=>handleChange("vendor_phone",e.target.value)}
+      />
 
-loadVendors();
-};
+      <input
+        placeholder="Address"
+        value={data.vendor_address || ""}
+        onChange={(e)=>handleChange("vendor_address",e.target.value)}
+      />
 
-// EDIT CLICK
-const editVendor = (v)=>{
-setName(v.name);
-setPhone(v.phone);
-setEditingId(v.id);
-};
+      <button
+        onClick={save}
+        style={{
+          marginTop:"10px",
+          background:"green",
+          color:"white",
+          padding:"8px",
+          border:"none"
+        }}
+      >
+        Save Vendor
+      </button>
 
-return(
+    </div>
 
-<div>
-
-<input
-placeholder="Vendor Name"
-value={name}
-onChange={(e)=>setName(e.target.value)}
-/>
-
-<input
-placeholder="Phone"
-value={phone}
-onChange={(e)=>setPhone(e.target.value)}
-/>
-
-<button onClick={saveVendor}>
-{editingId ? "Update" : "Add"}
-</button>
-
-<hr/>
-
-{vendors.map(v=>(
-<div key={v.id} style={{marginBottom:"10px"}}>
-
-<b>{v.name}</b><br/>
-{v.phone}<br/>
-
-<button onClick={()=>editVendor(v)}>
-Edit
-</button>
-
-</div>
-))}
-
-</div>
-
-);
-
+  );
 }
 
 export default VendorPanel;

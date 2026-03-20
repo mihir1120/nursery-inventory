@@ -8,10 +8,15 @@ function AddItem({ addItem }) {
   const [delivered, setDelivered] = useState("");
   const [photo, setPhoto] = useState(null);
 
+  // 🔥 NEW VENDOR STATES
+  const [vendorName, setVendorName] = useState("");
+  const [vendorPhone, setVendorPhone] = useState("");
+  const [vendorAddress, setVendorAddress] = useState("");
+
   const submit = () => {
 
-    if (!name || !date || !delivered) {
-      alert("Please fill all fields");
+    if (!name || !date || !delivered || !vendorName) {
+      alert("Please fill all required fields");
       return;
     }
 
@@ -19,10 +24,12 @@ function AddItem({ addItem }) {
       name,
       date,
       delivered,
-      photo
+      photo,
+      vendor_name: vendorName,
+      vendor_phone: vendorPhone,
+      vendor_address: vendorAddress
     };
 
-    // 🔥 IMPORTANT: pass correct type
     addItem(item, type);
 
     // clear form
@@ -30,13 +37,16 @@ function AddItem({ addItem }) {
     setDate("");
     setDelivered("");
     setPhoto(null);
-    setType("plant"); // reset dropdown
+    setVendorName("");
+    setVendorPhone("");
+    setVendorAddress("");
+    setType("plant");
   };
 
   return (
     <div className="form">
 
-      {/* ✅ CONTROLLED SELECT */}
+      {/* TYPE */}
       <select
         value={type}
         onChange={(e)=>setType(e.target.value)}
@@ -47,6 +57,7 @@ function AddItem({ addItem }) {
         <option value="fertilizer">Fertilizer</option>
       </select>
 
+      {/* ITEM DETAILS */}
       <input
         placeholder="Name"
         value={name}
@@ -70,6 +81,25 @@ function AddItem({ addItem }) {
         type="file"
         accept="image/*"
         onChange={(e) => setPhoto(e.target.files[0])}
+      />
+
+      {/* 🔥 VENDOR SECTION */}
+      <input
+        placeholder="Vendor Name"
+        value={vendorName}
+        onChange={(e) => setVendorName(e.target.value)}
+      />
+
+      <input
+        placeholder="Vendor Phone"
+        value={vendorPhone}
+        onChange={(e) => setVendorPhone(e.target.value)}
+      />
+
+      <input
+        placeholder="Vendor Address"
+        value={vendorAddress}
+        onChange={(e) => setVendorAddress(e.target.value)}
       />
 
       <button onClick={submit}>

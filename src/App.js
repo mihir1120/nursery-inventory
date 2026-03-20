@@ -20,6 +20,7 @@ const [filterType,setFilterType] = useState("all");
 
 // 🔥 VENDOR SIDEBAR
 const [showVendor,setShowVendor] = useState(false);
+const [selectedItem,setSelectedItem] = useState(null);
 
 // LOAD ITEMS
 const loadItems = async ()=>{
@@ -45,7 +46,9 @@ return ()=>clearInterval(interval);
 
 },[]);
 
-// ADD ITEM
+// =======================
+// ADD ITEM (UPDATED)
+// =======================
 const addItem = async(item,type)=>{
 const formData = new FormData();
 
@@ -53,6 +56,11 @@ formData.append("name",item.name);
 formData.append("type",type);
 formData.append("date",item.date);
 formData.append("delivered",item.delivered);
+
+// 🔥 VENDOR DATA
+formData.append("vendor_name",item.vendor_name);
+formData.append("vendor_phone",item.vendor_phone);
+formData.append("vendor_address",item.vendor_address);
 
 if(item.photo){
 formData.append("photo",item.photo);
@@ -81,6 +89,11 @@ formData.append("date",item.date);
 formData.append("delivered",item.delivered);
 formData.append("stock",item.stock);
 
+// 🔥 VENDOR UPDATE
+formData.append("vendor_name",item.vendor_name);
+formData.append("vendor_phone",item.vendor_phone);
+formData.append("vendor_address",item.vendor_address);
+
 if(item.photo instanceof File){
 formData.append("photo",item.photo);
 }
@@ -91,6 +104,12 @@ body:formData
 });
 
 loadItems();
+};
+
+// 🔥 OPEN VENDOR (IMPORTANT)
+const openVendor = (item)=>{
+setSelectedItem(item);
+setShowVendor(true);
 };
 
 // LOGOUT
@@ -104,11 +123,10 @@ if(!loggedIn){
 return <Login setLoggedIn={setLoggedIn}/>;
 }
 
-// 🔥 FILTER
+// FILTER
 const filterData = (data)=>{
 return data.filter(item=>{
-const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
-return matchSearch;
+return item.name.toLowerCase().includes(search.toLowerCase());
 });
 };
 
@@ -120,22 +138,6 @@ return(
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 
 <h1>🌱 AshokVatika Nursery Inventory</h1>
-
-<div>
-
-<button
-onClick={()=>setShowVendor(true)}
-style={{
-background:"#333",
-color:"white",
-border:"none",
-padding:"8px 15px",
-marginRight:"10px",
-cursor:"pointer"
-}}
->
-Vendors
-</button>
 
 <button
 onClick={logout}
@@ -151,9 +153,7 @@ Logout
 
 </div>
 
-</div>
-
-{/* SEARCH + FILTER */}
+{/* SEARCH */}
 <div style={{display:"flex",gap:"10px",margin:"20px 0"}}>
 
 <input
@@ -188,6 +188,7 @@ style={{padding:"8px"}}
 data={filterData(plants)}
 sellItem={sellItem}
 editItem={editItem}
+openVendor={openVendor}
 />
 </>
 )}
@@ -200,6 +201,7 @@ editItem={editItem}
 data={filterData(pots)}
 sellItem={sellItem}
 editItem={editItem}
+openVendor={openVendor}
 />
 </>
 )}
@@ -212,6 +214,7 @@ editItem={editItem}
 data={filterData(soils)}
 sellItem={sellItem}
 editItem={editItem}
+openVendor={openVendor}
 />
 </>
 )}
@@ -224,12 +227,13 @@ editItem={editItem}
 data={filterData(fertilizers)}
 sellItem={sellItem}
 editItem={editItem}
+openVendor={openVendor}
 />
 </>
 )}
 
-{/* VENDOR SIDEBAR */}
-{showVendor && (
+{/* 🔥 VENDOR SIDEBAR */}
+{showVendor && selectedItem && (
 <div style={{
 position:"fixed",
 top:0,
@@ -258,7 +262,7 @@ marginBottom:"15px"
 Close
 </button>
 
-<Vendor/>
+<Vendor item={selectedItem}/>
 
 </div>
 )}

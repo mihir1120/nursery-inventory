@@ -20,10 +20,8 @@ app.use("/uploads", express.static("uploads"))
 const db = new sqlite3.Database("./server/database.db")
 
 // =======================
-// CREATE TABLES
+// CREATE TABLE (UPDATED)
 // =======================
-
-// INVENTORY
 db.run(`
 CREATE TABLE IF NOT EXISTS inventory(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,16 +31,10 @@ date TEXT,
 delivered INTEGER,
 sold INTEGER,
 stock INTEGER,
-photo TEXT
-)
-`)
-
-// VENDORS ✅
-db.run(`
-CREATE TABLE IF NOT EXISTS vendors(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT,
-phone TEXT
+photo TEXT,
+vendor_name TEXT,
+vendor_phone TEXT,
+vendor_address TEXT
 )
 `)
 
@@ -59,17 +51,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 // =======================
-// ADD ITEM
+// ADD ITEM (UPDATED)
 // =======================
 app.post("/add", upload.single("photo"), (req, res) => {
 
-  const { name, type, date, delivered } = req.body
+  const { name, type, date, delivered, vendor_name, vendor_phone, vendor_address } = req.body
   const photo = req.file ? req.file.filename : ""
 
   db.run(
-    `INSERT INTO inventory(name,type,date,delivered,sold,stock,photo)
-     VALUES(?,?,?,?,?,?,?)`,
-    [name, type, date, delivered, 0, delivered, photo],
+    `INSERT INTO inventory(name,type,date,delivered,sold,stock,photo,vendor_name,vendor_phone,vendor_address)
+     VALUES(?,?,?,?,?,?,?,?,?,?)`,
+    [name, type, date, delivered, 0, delivered, photo, vendor_name, vendor_phone, vendor_address],
     function(err){
       if(err){
         return res.status(500).json(err)
@@ -97,7 +89,7 @@ app.get("/items", (req, res) => {
 })
 
 // =======================
-// SELL (BULK)
+// SELL
 // =======================
 app.put("/sell/:id", (req, res) => {
 
@@ -123,12 +115,12 @@ app.put("/sell/:id", (req, res) => {
 })
 
 // =======================
-// EDIT ITEM
+// EDIT ITEM (UPDATED)
 // =======================
 app.put("/edit/:id", upload.single("photo"), (req, res) => {
 
   const id = req.params.id
-  const { name, date, delivered, stock } = req.body
+  const { name, date, delivered, stock, vendor_name, vendor_phone, vendor_address } = req.body
 
   if(req.file){
 
@@ -145,9 +137,9 @@ app.put("/edit/:id", upload.single("photo"), (req, res) => {
 
       db.run(
         `UPDATE inventory
-         SET name=?, date=?, delivered=?, stock=?, photo=?
+         SET name=?, date=?, delivered=?, stock=?, photo=?, vendor_name=?, vendor_phone=?, vendor_address=?
          WHERE id=?`,
-        [name, date, delivered, stock, newPhoto, id],
+        [name, date, delivered, stock, newPhoto, vendor_name, vendor_phone, vendor_address, id],
         function(err){
           if(err){
             return res.status(500).json(err)
@@ -162,9 +154,9 @@ app.put("/edit/:id", upload.single("photo"), (req, res) => {
 
     db.run(
       `UPDATE inventory
-       SET name=?, date=?, delivered=?, stock=?
+       SET name=?, date=?, delivered=?, stock=?, vendor_name=?, vendor_phone=?, vendor_address=?
        WHERE id=?`,
-      [name, date, delivered, stock, id],
+      [name, date, delivered, stock, vendor_name, vendor_phone, vendor_address, id],
       function(err){
         if(err){
           return res.status(500).json(err)
@@ -198,75 +190,13 @@ app.delete("/delete/:id", (req, res) => {
 })
 
 // =======================
-// 🔥 VENDOR APIs
-// =======================
-
-// GET VENDORS
-app.get("/vendors",(req,res)=>{
-
-  db.all("SELECT * FROM vendors",(err,rows)=>{
-
-    if(err){
-      return res.status(500).json(err)
-    }
-
-    res.json(rows)
-  })
-
-})
-
-// ADD VENDOR
-app.post("/vendors",(req,res)=>{
-
-  const {name,phone} = req.body
-
-  db.run(
-    "INSERT INTO vendors(name,phone) VALUES(?,?)",
-    [name,phone],
-    function(err){
-
-      if(err){
-        return res.status(500).json(err)
-      }
-
-      res.json({message:"Vendor added"})
-    }
-  )
-
-})
-
-// UPDATE VENDOR
-app.put("/vendors/:id",(req,res)=>{
-
-  const {name,phone} = req.body
-  const id = req.params.id
-
-  db.run(
-    "UPDATE vendors SET name=?, phone=? WHERE id=?",
-    [name,phone,id],
-    function(err){
-
-      if(err){
-        return res.status(500).json(err)
-      }
-
-      res.json({message:"Vendor updated"})
-    }
-  )
-
-})
-
-// =======================
 // LOGIN
 // =======================
 app.post("/login", (req, res) => {
 
   const { username, password } = req.body
 
-  const ADMIN_USERNAME = "admin"
-  const ADMIN_PASSWORD = "ashokvatika123"
-
-  if(username === ADMIN_USERNAME && password === ADMIN_PASSWORD){
+  if(username === "admin" && password === "ashokvatika123"){
     res.json({ success: true })
   } else {
     res.status(401).json({ success: false })
