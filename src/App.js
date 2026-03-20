@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import AddItem from "./components/AddItem";
 import InventoryTable from "./components/InventoryTable";
-import Vendor from "./components/Vendor"; // ✅ IMPORT VENDOR
+import Vendor from "./components/VendorPanel";
 import "./App.css";
 
 function App() {
