@@ -10,7 +10,7 @@ const [plants,setPlants] = useState([]);
 const [pots,setPots] = useState([]);
 const [loggedIn,setLoggedIn] = useState(false);
 
-// LOAD ITEMS FUNCTION
+// LOAD ITEMS
 const loadItems = async ()=>{
 
 try{
@@ -38,7 +38,7 @@ setLoggedIn(true);
 // FIRST LOAD
 loadItems();
 
-// AUTO REFRESH EVERY 3 SECONDS
+// AUTO REFRESH
 const interval = setInterval(()=>{
 loadItems();
 },3000);
@@ -57,7 +57,10 @@ formData.append("name",item.name);
 formData.append("type",type);
 formData.append("date",item.date);
 formData.append("delivered",item.delivered);
+
+if(item.photo){
 formData.append("photo",item.photo);
+}
 
 await fetch("/add",{
 method:"POST",
@@ -85,11 +88,24 @@ loadItems();
 };
 
 
-// DELETE ITEM
-const deleteItem = async(id)=>{
+// EDIT ITEM ✅
+const editItem = async(item)=>{
 
-await fetch(`/delete/${id}`,{
-method:"DELETE"
+const formData = new FormData();
+
+formData.append("name",item.name);
+formData.append("date",item.date);
+formData.append("delivered",item.delivered);
+formData.append("stock",item.stock);
+
+// Only send photo if changed
+if(item.photo instanceof File){
+formData.append("photo",item.photo);
+}
+
+await fetch(`/edit/${item.id}`,{
+method:"PUT",
+body:formData
 });
 
 loadItems();
@@ -99,10 +115,8 @@ loadItems();
 
 // LOGOUT
 const logout = ()=>{
-
 localStorage.removeItem("loggedIn");
 setLoggedIn(false);
-
 };
 
 
@@ -135,27 +149,23 @@ Logout
 
 </div>
 
-
 <AddItem addItem={addItem}/>
-
 
 <h2>Plants</h2>
 
 <InventoryTable
 data={plants}
 sellItem={sellItem}
-deleteItem={deleteItem}
+editItem={editItem}
 />
-
 
 <h2>Pots</h2>
 
 <InventoryTable
 data={pots}
 sellItem={sellItem}
-deleteItem={deleteItem}
+editItem={editItem}
 />
-
 
 </div>
 

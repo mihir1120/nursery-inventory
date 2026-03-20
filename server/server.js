@@ -43,7 +43,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
+// =======================
 // ADD ITEM
+// =======================
 app.post("/add", upload.single("photo"), (req, res) => {
 
   const { name, type, date, delivered } = req.body
@@ -51,35 +53,37 @@ app.post("/add", upload.single("photo"), (req, res) => {
 
   db.run(
     `INSERT INTO inventory(name,type,date,delivered,sold,stock,photo)
-    VALUES(?,?,?,?,?,?,?)`,
+     VALUES(?,?,?,?,?,?,?)`,
     [name, type, date, delivered, 0, delivered, photo],
     function(err){
       if(err){
-        res.status(500).send(err)
-      }else{
-        res.send("Item added")
+        return res.status(500).json(err)
       }
+      res.json({ message: "Item added" })
     }
   )
 
 })
 
+// =======================
 // GET ITEMS
+// =======================
 app.get("/items", (req, res) => {
 
   db.all("SELECT * FROM inventory", (err, rows) => {
 
     if(err){
-      res.status(500).send(err)
-    }else{
-      res.json(rows)
+      return res.status(500).json(err)
     }
 
+    res.json(rows)
   })
 
 })
 
-// SELL
+// =======================
+// SELL (BULK)
+// =======================
 app.put("/sell/:id", (req, res) => {
 
   const id = req.params.id
@@ -87,24 +91,83 @@ app.put("/sell/:id", (req, res) => {
 
   db.run(
     `UPDATE inventory
-    SET sold = sold + ?,
-    stock = stock - ?
-    WHERE id = ? AND stock >= ?`,
+     SET sold = sold + ?,
+         stock = stock - ?
+     WHERE id = ? AND stock >= ?`,
     [quantity, quantity, id, quantity],
     function(err){
 
       if(err){
-        res.status(500).send(err)
-      }else{
-        res.send("Items sold")
+        return res.status(500).json(err)
       }
 
+      res.json({ message: "Items sold" })
     }
   )
 
 })
 
-// DELETE
+// =======================
+// EDIT ITEM ✅
+// =======================
+app.put("/edit/:id", upload.single("photo"), (req, res) => {
+
+  const id = req.params.id
+  const { name, date, delivered, stock } = req.body
+
+  // If new photo uploaded
+  if(req.file){
+
+    const newPhoto = req.file.filename
+
+    // get old photo
+    db.get("SELECT photo FROM inventory WHERE id = ?", [id], (err, row) => {
+
+      if(row && row.photo){
+        const oldPath = path.join("uploads", row.photo)
+        if(fs.existsSync(oldPath)){
+          fs.unlinkSync(oldPath)
+        }
+      }
+
+      db.run(
+        `UPDATE inventory
+         SET name=?, date=?, delivered=?, stock=?, photo=?
+         WHERE id=?`,
+        [name, date, delivered, stock, newPhoto, id],
+        function(err){
+          if(err){
+            return res.status(500).json(err)
+          }
+          res.json({ message: "Item updated" })
+        }
+      )
+
+    })
+
+  } else {
+
+    // Without photo update
+    db.run(
+      `UPDATE inventory
+       SET name=?, date=?, delivered=?, stock=?
+       WHERE id=?`,
+      [name, date, delivered, stock, id],
+      function(err){
+        if(err){
+          return res.status(500).json(err)
+        }
+        res.json({ message: "Item updated" })
+      }
+    )
+
+  }
+
+})
+
+// =======================
+// DELETE (optional keep)
+// =======================
 app.delete("/delete/:id", (req, res) => {
 
   const id = req.params.id
@@ -113,19 +176,18 @@ app.delete("/delete/:id", (req, res) => {
     `DELETE FROM inventory WHERE id = ?`,
     [id],
     function(err){
-
       if(err){
-        res.status(500).send(err)
-      }else{
-        res.send("Item deleted")
+        return res.status(500).json(err)
       }
-
+      res.json({ message: "Item deleted" })
     }
   )
 
 })
 
+// =======================
 // LOGIN
+// =======================
 app.post("/login", (req, res) => {
 
   const { username, password } = req.body
@@ -134,38 +196,28 @@ app.post("/login", (req, res) => {
   const ADMIN_PASSWORD = "ashokvatika123"
 
   if(username === ADMIN_USERNAME && password === ADMIN_PASSWORD){
-
-    res.json({
-      success: true,
-      message: "Login successful"
-    })
-
-  }else{
-
-    res.status(401).json({
-      success: false,
-      message: "Invalid login"
-    })
-
+    res.json({ success: true })
+  } else {
+    res.status(401).json({ success: false })
   }
 
 })
 
-
-// ===============================
-// SERVE REACT BUILD (RENDER SAFE)
-// ===============================
-
+// =======================
+// SERVE REACT BUILD (FIXED)
+// =======================
 const buildPath = path.join(__dirname, "../build")
 
 app.use(express.static(buildPath))
 
+// IMPORTANT FIX (no wildcard crash)
 app.get("/", (req, res) => {
   res.sendFile(path.join(buildPath, "index.html"))
 })
 
-
+// =======================
 // START SERVER
+// =======================
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
