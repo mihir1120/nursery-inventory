@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import AddItem from "./components/AddItem";
 import InventoryTable from "./components/InventoryTable";
-import Vendor from "./components/VendorPanel";
 import "./App.css";
 
 function App() {
@@ -14,7 +13,7 @@ const [fertilizers,setFertilizers] = useState([]);
 
 const [loggedIn,setLoggedIn] = useState(false);
 
-// 🔥 SEARCH + FILTER
+// SEARCH + FILTER
 const [search,setSearch] = useState("");
 const [filterType,setFilterType] = useState("all");
 
@@ -40,15 +39,12 @@ if(auth) setLoggedIn(true);
 
 loadItems();
 
-// AUTO REFRESH
 const interval = setInterval(loadItems,3000);
 return ()=>clearInterval(interval);
 
 },[]);
 
-// =======================
-// ADD ITEM (UPDATED)
-// =======================
+// ADD ITEM
 const addItem = async(item,type)=>{
 const formData = new FormData();
 
@@ -57,10 +53,10 @@ formData.append("type",type);
 formData.append("date",item.date);
 formData.append("delivered",item.delivered);
 
-// 🔥 VENDOR DATA
-formData.append("vendor_name",item.vendor_name);
-formData.append("vendor_phone",item.vendor_phone);
-formData.append("vendor_address",item.vendor_address);
+// ✅ VENDOR DATA
+formData.append("vendor_name",item.vendor_name || "");
+formData.append("vendor_phone",item.vendor_phone || "");
+formData.append("vendor_address",item.vendor_address || "");
 
 if(item.photo){
 formData.append("photo",item.photo);
@@ -89,10 +85,10 @@ formData.append("date",item.date);
 formData.append("delivered",item.delivered);
 formData.append("stock",item.stock);
 
-// 🔥 VENDOR UPDATE
-formData.append("vendor_name",item.vendor_name);
-formData.append("vendor_phone",item.vendor_phone);
-formData.append("vendor_address",item.vendor_address);
+// ✅ VENDOR UPDATE
+formData.append("vendor_name",item.vendor_name || "");
+formData.append("vendor_phone",item.vendor_phone || "");
+formData.append("vendor_address",item.vendor_address || "");
 
 if(item.photo instanceof File){
 formData.append("photo",item.photo);
@@ -106,7 +102,7 @@ body:formData
 loadItems();
 };
 
-// 🔥 OPEN VENDOR (IMPORTANT)
+// 🔥 OPEN VENDOR
 const openVendor = (item)=>{
 setSelectedItem(item);
 setShowVendor(true);
@@ -232,7 +228,7 @@ openVendor={openVendor}
 </>
 )}
 
-{/* 🔥 VENDOR SIDEBAR */}
+{/* 🔥 VENDOR SIDEBAR (FIXED) */}
 {showVendor && selectedItem && (
 <div style={{
 position:"fixed",
@@ -243,8 +239,7 @@ height:"100%",
 background:"#fff",
 boxShadow:"2px 0 10px rgba(0,0,0,0.2)",
 padding:"20px",
-zIndex:1000,
-overflowY:"auto"
+zIndex:1000
 }}>
 
 <h2>Vendor Info</h2>
@@ -262,7 +257,10 @@ marginBottom:"15px"
 Close
 </button>
 
-<Vendor item={selectedItem}/>
+{/* 🔥 SHOW DATA DIRECTLY */}
+<p><b>Name:</b> {selectedItem.vendor_name || "Not added"}</p>
+<p><b>Phone:</b> {selectedItem.vendor_phone || "Not added"}</p>
+<p><b>Address:</b> {selectedItem.vendor_address || "Not added"}</p>
 
 </div>
 )}
