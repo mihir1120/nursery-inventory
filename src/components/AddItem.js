@@ -10,7 +10,6 @@ function AddItem({ addItem }) {
 
   const submit = () => {
 
-    // validation
     if (!name || !date || !delivered) {
       alert("Please fill all fields");
       return;
@@ -23,6 +22,7 @@ function AddItem({ addItem }) {
       photo
     };
 
+    // 🔥 IMPORTANT: pass correct type
     addItem(item, type);
 
     // clear form
@@ -30,19 +30,23 @@ function AddItem({ addItem }) {
     setDate("");
     setDelivered("");
     setPhoto(null);
+    setType("plant"); // reset dropdown
   };
 
   return (
     <div className="form">
 
-    <select onChange={(e)=>setType(e.target.value)}>
+      {/* ✅ CONTROLLED SELECT */}
+      <select
+        value={type}
+        onChange={(e)=>setType(e.target.value)}
+      >
+        <option value="plant">Plant</option>
+        <option value="pot">Pot</option>
+        <option value="soil">Soil</option>
+        <option value="fertilizer">Fertilizer</option>
+      </select>
 
-<option value="plant">Plant</option>
-<option value="pot">Pot</option>
-<option value="soil">Soil</option>
-<option value="fertilizer">Fertilizer</option>
-
-</select>
       <input
         placeholder="Name"
         value={name}
