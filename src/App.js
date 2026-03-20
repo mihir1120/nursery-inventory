@@ -9,13 +9,16 @@ function App() {
 
 const [plants,setPlants] = useState([]);
 const [pots,setPots] = useState([]);
+const [soils,setSoils] = useState([]);
+const [fertilizers,setFertilizers] = useState([]);
+
 const [loggedIn,setLoggedIn] = useState(false);
 
 // 🔥 SEARCH + FILTER
 const [search,setSearch] = useState("");
 const [filterType,setFilterType] = useState("all");
 
-// 🔥 VENDOR SIDEBAR STATE
+// 🔥 VENDOR SIDEBAR
 const [showVendor,setShowVendor] = useState(false);
 
 // LOAD ITEMS
@@ -25,6 +28,8 @@ const data = await res.json();
 
 setPlants(data.filter(i=>i.type==="plant"));
 setPots(data.filter(i=>i.type==="pot"));
+setSoils(data.filter(i=>i.type==="soil"));
+setFertilizers(data.filter(i=>i.type==="fertilizer"));
 };
 
 useEffect(()=>{
@@ -99,7 +104,7 @@ if(!loggedIn){
 return <Login setLoggedIn={setLoggedIn}/>;
 }
 
-// 🔥 FILTER LOGIC
+// 🔥 FILTER
 const filterData = (data)=>{
 return data.filter(item=>{
 const matchSearch = item.name.toLowerCase().includes(search.toLowerCase());
@@ -118,7 +123,6 @@ return(
 
 <div>
 
-{/* ✅ VENDOR BUTTON */}
 <button
 onClick={()=>setShowVendor(true)}
 style={{
@@ -133,7 +137,6 @@ cursor:"pointer"
 Vendors
 </button>
 
-{/* LOGOUT */}
 <button
 onClick={logout}
 style={{
@@ -150,11 +153,11 @@ Logout
 
 </div>
 
-{/* 🔥 SEARCH + FILTER */}
+{/* SEARCH + FILTER */}
 <div style={{display:"flex",gap:"10px",margin:"20px 0"}}>
 
 <input
-placeholder="Search plant/pot..."
+placeholder="Search..."
 value={search}
 onChange={(e)=>setSearch(e.target.value)}
 style={{padding:"8px",width:"200px"}}
@@ -168,6 +171,8 @@ style={{padding:"8px"}}
 <option value="all">All</option>
 <option value="plant">Plants</option>
 <option value="pot">Pots</option>
+<option value="soil">Soil</option>
+<option value="fertilizer">Fertilizer</option>
 </select>
 
 </div>
@@ -199,9 +204,31 @@ editItem={editItem}
 </>
 )}
 
-{/* ===================== */}
-{/* 🔥 VENDOR SIDEBAR */}
-{/* ===================== */}
+{/* SOIL */}
+{(filterType==="all" || filterType==="soil") && (
+<>
+<h2>Soil</h2>
+<InventoryTable
+data={filterData(soils)}
+sellItem={sellItem}
+editItem={editItem}
+/>
+</>
+)}
+
+{/* FERTILIZER */}
+{(filterType==="all" || filterType==="fertilizer") && (
+<>
+<h2>Fertilizer</h2>
+<InventoryTable
+data={filterData(fertilizers)}
+sellItem={sellItem}
+editItem={editItem}
+/>
+</>
+)}
+
+{/* VENDOR SIDEBAR */}
 {showVendor && (
 <div style={{
 position:"fixed",
@@ -225,14 +252,12 @@ background:"red",
 color:"white",
 border:"none",
 padding:"5px 10px",
-marginBottom:"15px",
-cursor:"pointer"
+marginBottom:"15px"
 }}
 >
 Close
 </button>
 
-{/* VENDOR COMPONENT */}
 <Vendor/>
 
 </div>

@@ -35,11 +35,14 @@ function AddItem({ addItem }) {
   return (
     <div className="form">
 
-      <select value={type} onChange={(e) => setType(e.target.value)}>
-        <option value="plant">Plant</option>
-        <option value="pot">Pot</option>
-      </select>
+    <select onChange={(e)=>setType(e.target.value)}>
 
+<option value="plant">Plant</option>
+<option value="pot">Pot</option>
+<option value="soil">Soil</option>
+<option value="fertilizer">Fertilizer</option>
+
+</select>
       <input
         placeholder="Name"
         value={name}
