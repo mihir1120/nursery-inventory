@@ -19,7 +19,11 @@ app.use("/uploads", express.static("uploads"))
 
 const db = new sqlite3.Database("./server/database.db")
 
-// CREATE TABLE
+// =======================
+// CREATE TABLES
+// =======================
+
+// INVENTORY
 db.run(`
 CREATE TABLE IF NOT EXISTS inventory(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +37,18 @@ photo TEXT
 )
 `)
 
+// VENDORS ✅
+db.run(`
+CREATE TABLE IF NOT EXISTS vendors(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT,
+phone TEXT
+)
+`)
+
+// =======================
 // FILE STORAGE
+// =======================
 const storage = multer.diskStorage({
   destination: "uploads/",
   filename: (req, file, cb) => {
@@ -108,19 +123,17 @@ app.put("/sell/:id", (req, res) => {
 })
 
 // =======================
-// EDIT ITEM ✅
+// EDIT ITEM
 // =======================
 app.put("/edit/:id", upload.single("photo"), (req, res) => {
 
   const id = req.params.id
   const { name, date, delivered, stock } = req.body
 
-  // If new photo uploaded
   if(req.file){
 
     const newPhoto = req.file.filename
 
-    // get old photo
     db.get("SELECT photo FROM inventory WHERE id = ?", [id], (err, row) => {
 
       if(row && row.photo){
@@ -147,7 +160,6 @@ app.put("/edit/:id", upload.single("photo"), (req, res) => {
 
   } else {
 
-    // Without photo update
     db.run(
       `UPDATE inventory
        SET name=?, date=?, delivered=?, stock=?
@@ -166,7 +178,7 @@ app.put("/edit/:id", upload.single("photo"), (req, res) => {
 })
 
 // =======================
-// DELETE (optional keep)
+// DELETE ITEM
 // =======================
 app.delete("/delete/:id", (req, res) => {
 
@@ -180,6 +192,65 @@ app.delete("/delete/:id", (req, res) => {
         return res.status(500).json(err)
       }
       res.json({ message: "Item deleted" })
+    }
+  )
+
+})
+
+// =======================
+// 🔥 VENDOR APIs
+// =======================
+
+// GET VENDORS
+app.get("/vendors",(req,res)=>{
+
+  db.all("SELECT * FROM vendors",(err,rows)=>{
+
+    if(err){
+      return res.status(500).json(err)
+    }
+
+    res.json(rows)
+  })
+
+})
+
+// ADD VENDOR
+app.post("/vendors",(req,res)=>{
+
+  const {name,phone} = req.body
+
+  db.run(
+    "INSERT INTO vendors(name,phone) VALUES(?,?)",
+    [name,phone],
+    function(err){
+
+      if(err){
+        return res.status(500).json(err)
+      }
+
+      res.json({message:"Vendor added"})
+    }
+  )
+
+})
+
+// UPDATE VENDOR
+app.put("/vendors/:id",(req,res)=>{
+
+  const {name,phone} = req.body
+  const id = req.params.id
+
+  db.run(
+    "UPDATE vendors SET name=?, phone=? WHERE id=?",
+    [name,phone,id],
+    function(err){
+
+      if(err){
+        return res.status(500).json(err)
+      }
+
+      res.json({message:"Vendor updated"})
     }
   )
 
@@ -204,13 +275,12 @@ app.post("/login", (req, res) => {
 })
 
 // =======================
-// SERVE REACT BUILD (FIXED)
+// SERVE REACT BUILD
 // =======================
 const buildPath = path.join(__dirname, "../build")
 
 app.use(express.static(buildPath))
 
-// IMPORTANT FIX (no wildcard crash)
 app.get("/", (req, res) => {
   res.sendFile(path.join(buildPath, "index.html"))
 })

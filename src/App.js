@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Login from "./Login";
 import AddItem from "./components/AddItem";
 import InventoryTable from "./components/InventoryTable";
+import Vendor from "./components/Vendor"; // ✅ IMPORT VENDOR
 import "./App.css";
 
 function App() {
@@ -10,9 +11,12 @@ const [plants,setPlants] = useState([]);
 const [pots,setPots] = useState([]);
 const [loggedIn,setLoggedIn] = useState(false);
 
-// 🔥 NEW STATES
+// 🔥 SEARCH + FILTER
 const [search,setSearch] = useState("");
 const [filterType,setFilterType] = useState("all");
+
+// 🔥 VENDOR SIDEBAR STATE
+const [showVendor,setShowVendor] = useState(false);
 
 // LOAD ITEMS
 const loadItems = async ()=>{
@@ -30,6 +34,7 @@ if(auth) setLoggedIn(true);
 
 loadItems();
 
+// AUTO REFRESH
 const interval = setInterval(loadItems,3000);
 return ()=>clearInterval(interval);
 
@@ -43,7 +48,10 @@ formData.append("name",item.name);
 formData.append("type",type);
 formData.append("date",item.date);
 formData.append("delivered",item.delivered);
+
+if(item.photo){
 formData.append("photo",item.photo);
+}
 
 await fetch("/add",{method:"POST",body:formData});
 loadItems();
@@ -103,17 +111,46 @@ return(
 
 <div className="app">
 
+{/* HEADER */}
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+
 <h1>🌱 AshokVatika Nursery Inventory</h1>
 
-<button onClick={logout} style={{
-background:"red",color:"white",border:"none",padding:"8px 15px"
-}}>
+<div>
+
+{/* ✅ VENDOR BUTTON */}
+<button
+onClick={()=>setShowVendor(true)}
+style={{
+background:"#333",
+color:"white",
+border:"none",
+padding:"8px 15px",
+marginRight:"10px",
+cursor:"pointer"
+}}
+>
+Vendors
+</button>
+
+{/* LOGOUT */}
+<button
+onClick={logout}
+style={{
+background:"red",
+color:"white",
+border:"none",
+padding:"8px 15px"
+}}
+>
 Logout
 </button>
+
 </div>
 
-{/* 🔥 SEARCH + FILTER UI */}
+</div>
+
+{/* 🔥 SEARCH + FILTER */}
 <div style={{display:"flex",gap:"10px",margin:"20px 0"}}>
 
 <input
@@ -135,6 +172,7 @@ style={{padding:"8px"}}
 
 </div>
 
+{/* ADD ITEM */}
 <AddItem addItem={addItem}/>
 
 {/* PLANTS */}
@@ -159,6 +197,45 @@ sellItem={sellItem}
 editItem={editItem}
 />
 </>
+)}
+
+{/* ===================== */}
+{/* 🔥 VENDOR SIDEBAR */}
+{/* ===================== */}
+{showVendor && (
+<div style={{
+position:"fixed",
+top:0,
+left:0,
+width:"320px",
+height:"100%",
+background:"#fff",
+boxShadow:"2px 0 10px rgba(0,0,0,0.2)",
+padding:"20px",
+zIndex:1000,
+overflowY:"auto"
+}}>
+
+<h2>Vendor Info</h2>
+
+<button
+onClick={()=>setShowVendor(false)}
+style={{
+background:"red",
+color:"white",
+border:"none",
+padding:"5px 10px",
+marginBottom:"15px",
+cursor:"pointer"
+}}
+>
+Close
+</button>
+
+{/* VENDOR COMPONENT */}
+<Vendor/>
+
+</div>
 )}
 
 </div>
