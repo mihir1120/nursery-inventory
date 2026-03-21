@@ -4,6 +4,8 @@ import AddItem from "./components/AddItem";
 import InventoryTable from "./components/InventoryTable";
 import "./App.css";
 
+const BASE_URL = "https://nursery-inventory.onrender.com";
+
 function App() {
 
 const [plants,setPlants] = useState([]);
@@ -17,13 +19,13 @@ const [loggedIn,setLoggedIn] = useState(false);
 const [search,setSearch] = useState("");
 const [filterType,setFilterType] = useState("all");
 
-// 🔥 VENDOR SIDEBAR
+// VENDOR SIDEBAR
 const [showVendor,setShowVendor] = useState(false);
 const [selectedItem,setSelectedItem] = useState(null);
 
 // LOAD ITEMS
 const loadItems = async ()=>{
-const res = await fetch("/items");
+const res = await fetch(`${BASE_URL}/items`);
 const data = await res.json();
 
 setPlants(data.filter(i=>i.type==="plant"));
@@ -53,7 +55,6 @@ formData.append("type",type);
 formData.append("date",item.date);
 formData.append("delivered",item.delivered);
 
-// ✅ VENDOR DATA
 formData.append("vendor_name",item.vendor_name || "");
 formData.append("vendor_phone",item.vendor_phone || "");
 formData.append("vendor_address",item.vendor_address || "");
@@ -62,13 +63,17 @@ if(item.photo){
 formData.append("photo",item.photo);
 }
 
-await fetch("/add",{method:"POST",body:formData});
+await fetch(`${BASE_URL}/add`,{
+method:"POST",
+body:formData
+});
+
 loadItems();
 };
 
 // SELL
 const sellItem = async(id,quantity)=>{
-await fetch(`/sell/${id}`,{
+await fetch(`${BASE_URL}/sell/${id}`,{
 method:"PUT",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({quantity})
@@ -85,7 +90,6 @@ formData.append("date",item.date);
 formData.append("delivered",item.delivered);
 formData.append("stock",item.stock);
 
-// ✅ VENDOR UPDATE
 formData.append("vendor_name",item.vendor_name || "");
 formData.append("vendor_phone",item.vendor_phone || "");
 formData.append("vendor_address",item.vendor_address || "");
@@ -94,7 +98,7 @@ if(item.photo instanceof File){
 formData.append("photo",item.photo);
 }
 
-await fetch(`/edit/${item.id}`,{
+await fetch(`${BASE_URL}/edit/${item.id}`,{
 method:"PUT",
 body:formData
 });
@@ -102,7 +106,7 @@ body:formData
 loadItems();
 };
 
-// 🔥 OPEN VENDOR
+// OPEN VENDOR
 const openVendor = (item)=>{
 setSelectedItem(item);
 setShowVendor(true);
@@ -130,9 +134,7 @@ return(
 
 <div className="app">
 
-{/* HEADER */}
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-
 <h1>🌱 AshokVatika Nursery Inventory</h1>
 
 <button
@@ -146,12 +148,9 @@ padding:"8px 15px"
 >
 Logout
 </button>
-
 </div>
 
-{/* SEARCH */}
 <div style={{display:"flex",gap:"10px",margin:"20px 0"}}>
-
 <input
 placeholder="Search..."
 value={search}
@@ -170,13 +169,10 @@ style={{padding:"8px"}}
 <option value="soil">Soil</option>
 <option value="fertilizer">Fertilizer</option>
 </select>
-
 </div>
 
-{/* ADD ITEM */}
 <AddItem addItem={addItem}/>
 
-{/* PLANTS */}
 {(filterType==="all" || filterType==="plant") && (
 <>
 <h2>Plants</h2>
@@ -189,7 +185,6 @@ openVendor={openVendor}
 </>
 )}
 
-{/* POTS */}
 {(filterType==="all" || filterType==="pot") && (
 <>
 <h2>Pots</h2>
@@ -202,7 +197,6 @@ openVendor={openVendor}
 </>
 )}
 
-{/* SOIL */}
 {(filterType==="all" || filterType==="soil") && (
 <>
 <h2>Soil</h2>
@@ -215,7 +209,6 @@ openVendor={openVendor}
 </>
 )}
 
-{/* FERTILIZER */}
 {(filterType==="all" || filterType==="fertilizer") && (
 <>
 <h2>Fertilizer</h2>
@@ -228,7 +221,6 @@ openVendor={openVendor}
 </>
 )}
 
-{/* 🔥 VENDOR SIDEBAR (FIXED) */}
 {showVendor && selectedItem && (
 <div style={{
 position:"fixed",
@@ -257,7 +249,6 @@ marginBottom:"15px"
 Close
 </button>
 
-{/* 🔥 SHOW DATA DIRECTLY */}
 <p><b>Name:</b> {selectedItem.vendor_name || "Not added"}</p>
 <p><b>Phone:</b> {selectedItem.vendor_phone || "Not added"}</p>
 <p><b>Address:</b> {selectedItem.vendor_address || "Not added"}</p>
@@ -266,9 +257,7 @@ Close
 )}
 
 </div>
-
 );
-
 }
 
 export default App;
