@@ -4,7 +4,11 @@ import AddItem from "./components/AddItem";
 import InventoryTable from "./components/InventoryTable";
 import "./App.css";
 
-const BASE_URL = "https://nursery-inventory.onrender.com";
+// 🔥 AUTO SWITCH (LOCAL + DEPLOY)
+const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://nursery-inventory.onrender.com";
 
 function App() {
 
@@ -23,15 +27,24 @@ const [filterType,setFilterType] = useState("all");
 const [showVendor,setShowVendor] = useState(false);
 const [selectedItem,setSelectedItem] = useState(null);
 
-// LOAD ITEMS
+// =======================
+// LOAD ITEMS (FIXED)
+// =======================
 const loadItems = async ()=>{
+try{
 const res = await fetch(`${BASE_URL}/items`);
 const data = await res.json();
+
+console.log("DATA:", data); // 🔥 DEBUG
 
 setPlants(data.filter(i=>i.type==="plant"));
 setPots(data.filter(i=>i.type==="pot"));
 setSoils(data.filter(i=>i.type==="soil"));
 setFertilizers(data.filter(i=>i.type==="fertilizer"));
+
+}catch(err){
+console.log("LOAD ERROR:", err);
+}
 };
 
 useEffect(()=>{
@@ -46,8 +59,12 @@ return ()=>clearInterval(interval);
 
 },[]);
 
-// ADD ITEM
+// =======================
+// ADD ITEM (FIXED)
+// =======================
 const addItem = async(item,type)=>{
+try{
+
 const formData = new FormData();
 
 formData.append("name",item.name);
@@ -63,12 +80,19 @@ if(item.photo){
 formData.append("photo",item.photo);
 }
 
-await fetch(`${BASE_URL}/add`,{
+const res = await fetch(`${BASE_URL}/add`,{
 method:"POST",
 body:formData
 });
 
+const result = await res.json();
+console.log("ADD RESPONSE:", result);
+
 loadItems();
+
+}catch(err){
+console.log("ADD ERROR:", err);
+}
 };
 
 // SELL
@@ -134,6 +158,7 @@ return(
 
 <div className="app">
 
+{/* HEADER */}
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 <h1>🌱 AshokVatika Nursery Inventory</h1>
 
@@ -150,6 +175,7 @@ Logout
 </button>
 </div>
 
+{/* SEARCH */}
 <div style={{display:"flex",gap:"10px",margin:"20px 0"}}>
 <input
 placeholder="Search..."
@@ -171,56 +197,39 @@ style={{padding:"8px"}}
 </select>
 </div>
 
+{/* ADD ITEM */}
 <AddItem addItem={addItem}/>
 
+{/* TABLES */}
 {(filterType==="all" || filterType==="plant") && (
 <>
 <h2>Plants</h2>
-<InventoryTable
-data={filterData(plants)}
-sellItem={sellItem}
-editItem={editItem}
-openVendor={openVendor}
-/>
+<InventoryTable data={filterData(plants)} sellItem={sellItem} editItem={editItem} openVendor={openVendor}/>
 </>
 )}
 
 {(filterType==="all" || filterType==="pot") && (
 <>
 <h2>Pots</h2>
-<InventoryTable
-data={filterData(pots)}
-sellItem={sellItem}
-editItem={editItem}
-openVendor={openVendor}
-/>
+<InventoryTable data={filterData(pots)} sellItem={sellItem} editItem={editItem} openVendor={openVendor}/>
 </>
 )}
 
 {(filterType==="all" || filterType==="soil") && (
 <>
 <h2>Soil</h2>
-<InventoryTable
-data={filterData(soils)}
-sellItem={sellItem}
-editItem={editItem}
-openVendor={openVendor}
-/>
+<InventoryTable data={filterData(soils)} sellItem={sellItem} editItem={editItem} openVendor={openVendor}/>
 </>
 )}
 
 {(filterType==="all" || filterType==="fertilizer") && (
 <>
 <h2>Fertilizer</h2>
-<InventoryTable
-data={filterData(fertilizers)}
-sellItem={sellItem}
-editItem={editItem}
-openVendor={openVendor}
-/>
+<InventoryTable data={filterData(fertilizers)} sellItem={sellItem} editItem={editItem} openVendor={openVendor}/>
 </>
 )}
 
+{/* VENDOR SIDEBAR */}
 {showVendor && selectedItem && (
 <div style={{
 position:"fixed",
