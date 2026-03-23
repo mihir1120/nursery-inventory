@@ -60,12 +60,12 @@ const upload = multer({ storage });
 
 /* ---------- API ROUTES ---------- */
 
-// ✅ Health check
+// Health
 app.get("/api", (req, res) => {
   res.send("API is running 🚀");
 });
 
-// ✅ GET ITEMS
+// Get items
 app.get("/items", (req, res) => {
   db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
     if (err) {
@@ -76,7 +76,7 @@ app.get("/items", (req, res) => {
   });
 });
 
-// ✅ ADD ITEM
+// Add item
 app.post("/items", upload.single("image"), (req, res) => {
   try {
     const {
@@ -95,14 +95,10 @@ app.post("/items", upload.single("image"), (req, res) => {
 
     const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const query = `
-      INSERT INTO items 
-      (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
     db.run(
-      query,
+      `INSERT INTO items 
+      (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         category,
@@ -128,7 +124,7 @@ app.post("/items", upload.single("image"), (req, res) => {
   }
 });
 
-// ✅ UPDATE ITEM
+// Update
 app.put("/items/:id", (req, res) => {
   const {
     name,
@@ -142,16 +138,12 @@ app.put("/items/:id", (req, res) => {
     vendor_address,
   } = req.body;
 
-  const query = `
-    UPDATE items SET
+  db.run(
+    `UPDATE items SET
       name=?, category=?, price=?, stock=?,
       delivered=?, sold=?,
       vendor_name=?, vendor_phone=?, vendor_address=?
-    WHERE id=?
-  `;
-
-  db.run(
-    query,
+    WHERE id=?`,
     [
       name,
       category,
@@ -175,7 +167,7 @@ app.put("/items/:id", (req, res) => {
   );
 });
 
-// ✅ SELL ITEM
+// Sell
 app.post("/sell/:id", (req, res) => {
   const { quantity } = req.body;
 
@@ -208,8 +200,8 @@ if (fs.existsSync(buildPath)) {
 
   app.use(express.static(buildPath));
 
-  // 🔥 FINAL FIX (NO CRASH)
-  app.get("*", (req, res) => {
+  // ✅ FINAL FIX (NO CRASH EVER)
+  app.use((req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
 }
