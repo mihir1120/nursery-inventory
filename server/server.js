@@ -74,8 +74,6 @@ app.get("/items", (req, res) => {
 
 // ADD ITEM
 app.post("/items", upload.single("image"), (req, res) => {
-  console.log("📥 Incoming Data:", req.body);
-
   const {
     name,
     category,
@@ -116,7 +114,6 @@ app.post("/items", upload.single("image"), (req, res) => {
         return res.status(500).json(err);
       }
 
-      console.log("✅ Item Inserted ID:", this.lastID);
       res.json({ success: true, id: this.lastID });
     }
   );
@@ -200,8 +197,8 @@ const buildPath = path.join(__dirname, "../build");
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
-  // ✅ FIXED ROUTE (NO ERROR)
-  app.get("/*", (req, res) => {
+  // ✅ FINAL FIX (IMPORTANT)
+  app.get("*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
 }
