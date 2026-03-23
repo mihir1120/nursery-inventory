@@ -1,199 +1,199 @@
-const supabase = require("./supabase");
 const express = require("express");
+const sqlite3 = require("sqlite3").verbose();
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+/* ---------- MIDDLEWARE ---------- */
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Ensure uploads folder exists
-if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
+/* ---------- ENSURE UPLOADS FOLDER ---------- */
+const uploadPath = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath);
 }
 
-app.use("/uploads", express.static("uploads"));
+/* ---------- STATIC ---------- */
+app.use("/uploads", express.static(uploadPath));
 
-// =======================
-// FILE STORAGE
-// =======================
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+/* ---------- DATABASE ---------- */
+const db = new sqlite3.Database("./inventory.db", (err) => {
+  if (err) console.error("DB ERROR:", err.message);
+  else console.log("✅ Connected to SQLite DB");
 });
 
+/* ---------- TABLE ---------- */
+db.run(`
+CREATE TABLE IF NOT EXISTS items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  category TEXT,
+  price REAL,
+  stock INTEGER,
+  delivered INTEGER DEFAULT 0,
+  sold INTEGER DEFAULT 0,
+  image TEXT,
+  vendor_name TEXT,
+  vendor_phone TEXT,
+  vendor_address TEXT
+)
+`);
+
+/* ---------- FILE UPLOAD ---------- */
+const storage = multer.diskStorage({
+  destination: uploadPath,
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
 const upload = multer({ storage });
 
-// =======================
-// ADD ITEM (SUPABASE)
-// =======================
-app.post("/add", upload.single("photo"), async (req, res) => {
+/* ---------- ROUTES ---------- */
+
+// ✅ TEST ROUTE
+app.get("/", (req, res) => {
+  res.send("API is running 🚀");
+});
+
+// ✅ GET ALL ITEMS
+app.get("/items", (req, res) => {
+  db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
+    if (err) {
+      console.log("GET ERROR:", err);
+      return res.status(500).json(err);
+    }
+    res.json(rows);
+  });
+});
+
+// ✅ ADD ITEM (Works with BOTH JSON & FormData)
+app.post("/items", upload.single("image"), (req, res) => {
+  console.log("📥 Incoming Data:", req.body);
+
   const {
     name,
-    type,
-    date,
-    delivered,
+    category,
+    price,
+    stock,
     vendor_name,
     vendor_phone,
     vendor_address,
   } = req.body;
 
-  const photo = req.file ? req.file.filename : "";
+  const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-  const { data, error } = await supabase.from("inventory").insert([
-    {
+  if (!name) {
+    return res.status(400).json({ error: "Name is required" });
+  }
+
+  const query = `
+    INSERT INTO items 
+    (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.run(
+    query,
+    [
       name,
-      type,
-      date,
-      delivered,
-      sold: 0,
-      stock: delivered,
-      photo,
+      category,
+      price,
+      stock,
+      image,
       vendor_name,
       vendor_phone,
       vendor_address,
-    },
-  ]);
+    ],
+    function (err) {
+      if (err) {
+        console.log("❌ DB INSERT ERROR:", err);
+        return res.status(500).json(err);
+      }
 
-  if (error) {
-    console.log(error);
-    return res.status(500).json(error);
-  }
-
-  res.json({ message: "Item added", data });
+      console.log("✅ Item Inserted ID:", this.lastID);
+      res.json({ success: true, id: this.lastID });
+    }
+  );
 });
 
-// =======================
-// GET ITEMS
-// =======================
-app.get("/items", async (req, res) => {
-  const { data, error } = await supabase.from("inventory").select("*");
-
-  if (error) return res.status(500).json(error);
-
-  res.json(data);
-});
-
-// =======================
-// SELL
-// =======================
-app.put("/sell/:id", async (req, res) => {
-  const id = req.params.id;
-  const quantity = parseInt(req.body.quantity) || 1;
-
-  // Get current item
-  const { data: item } = await supabase
-    .from("inventory")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (!item || item.stock < quantity) {
-    return res.status(400).json({ message: "Not enough stock" });
-  }
-
-  const { error } = await supabase
-    .from("inventory")
-    .update({
-      sold: item.sold + quantity,
-      stock: item.stock - quantity,
-    })
-    .eq("id", id);
-
-  if (error) return res.status(500).json(error);
-
-  res.json({ message: "Items sold" });
-});
-
-// =======================
-// EDIT ITEM
-// =======================
-app.put("/edit/:id", upload.single("photo"), async (req, res) => {
-  const id = req.params.id;
+// ✅ UPDATE ITEM
+app.put("/items/:id", (req, res) => {
   const {
     name,
-    date,
-    delivered,
+    category,
+    price,
     stock,
+    delivered,
+    sold,
     vendor_name,
     vendor_phone,
     vendor_address,
   } = req.body;
 
-  let updateData = {
-    name,
-    date,
-    delivered,
-    stock,
-    vendor_name,
-    vendor_phone,
-    vendor_address,
-  };
+  const query = `
+    UPDATE items SET
+      name=?, category=?, price=?, stock=?,
+      delivered=?, sold=?,
+      vendor_name=?, vendor_phone=?, vendor_address=?
+    WHERE id=?
+  `;
 
-  if (req.file) {
-    updateData.photo = req.file.filename;
+  db.run(
+    query,
+    [
+      name,
+      category,
+      price,
+      stock,
+      delivered,
+      sold,
+      vendor_name,
+      vendor_phone,
+      vendor_address,
+      req.params.id,
+    ],
+    function (err) {
+      if (err) {
+        console.log("❌ UPDATE ERROR:", err);
+        return res.status(500).json(err);
+      }
+
+      res.json({ updated: true });
+    }
+  );
+});
+
+// ✅ SELL ITEM
+app.post("/sell/:id", (req, res) => {
+  const { quantity } = req.body;
+
+  if (!quantity) {
+    return res.status(400).json({ error: "Quantity required" });
   }
 
-  const { error } = await supabase
-    .from("inventory")
-    .update(updateData)
-    .eq("id", id);
+  db.run(
+    `UPDATE items 
+     SET sold = sold + ?, stock = stock - ? 
+     WHERE id = ?`,
+    [quantity, quantity, req.params.id],
+    function (err) {
+      if (err) {
+        console.log("❌ SELL ERROR:", err);
+        return res.status(500).json(err);
+      }
 
-  if (error) return res.status(500).json(error);
-
-  res.json({ message: "Item updated" });
+      res.json({ sold: true });
+    }
+  );
 });
 
-// =======================
-// DELETE ITEM
-// =======================
-app.delete("/delete/:id", async (req, res) => {
-  const id = req.params.id;
-
-  const { error } = await supabase
-    .from("inventory")
-    .delete()
-    .eq("id", id);
-
-  if (error) return res.status(500).json(error);
-
-  res.json({ message: "Item deleted" });
-});
-
-// =======================
-// LOGIN
-// =======================
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-
-  if (username === "admin" && password === "ashokvatika123") {
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ success: false });
-  }
-});
-
-// =======================
-// SERVE REACT BUILD
-// =======================
-const buildPath = path.join(__dirname, "../build");
-
-app.use(express.static(buildPath));
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(buildPath, "index.html"));
-});
-
-// =======================
-// START SERVER
-// =======================
-const PORT = process.env.PORT || 5000;
-
+/* ---------- START SERVER ---------- */
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

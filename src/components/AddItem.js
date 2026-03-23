@@ -1,112 +1,126 @@
 import React, { useState } from "react";
 
-function AddItem({ addItem }) {
+// ✅ AUTO SWITCH API (LOCAL + RENDER)
+const API =
+  window.location.hostname.includes("render")
+    ? "https://nursery-inventory.onrender.com"
+    : "http://localhost:5000";
 
-  const [type, setType] = useState("plant");
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
-  const [delivered, setDelivered] = useState("");
-  const [photo, setPhoto] = useState(null);
+function AddItem({ fetchItems }) {
+  const [form, setForm] = useState({
+    name: "",
+    category: "",
+    price: "",
+    stock: "",
+    vendor_name: "",
+    vendor_phone: "",
+    vendor_address: "",
+  });
 
-  // 🔥 NEW VENDOR STATES
-  const [vendorName, setVendorName] = useState("");
-  const [vendorPhone, setVendorPhone] = useState("");
-  const [vendorAddress, setVendorAddress] = useState("");
+  const [image, setImage] = useState(null);
 
-  const submit = () => {
+  const handleChange = (field, value) => {
+    setForm({ ...form, [field]: value });
+  };
 
-    if (!name || !date || !delivered || !vendorName) {
-      alert("Please fill all required fields");
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    console.log("🚀 API:", API);
+    console.log("📤 Sending Form:", form);
+
+    try {
+      // ✅ USE JSON (NO FormData → FIXES RENDER ISSUE)
+      const res = await fetch(`${API}/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const result = await res.json();
+
+      console.log("✅ Response:", result);
+
+      if (res.ok) {
+        alert("Item Added Successfully ✅");
+
+        setForm({
+          name: "",
+          category: "",
+          price: "",
+          stock: "",
+          vendor_name: "",
+          vendor_phone: "",
+          vendor_address: "",
+        });
+
+        setImage(null);
+
+        fetchItems(); // 🔥 refresh table
+      } else {
+        alert("❌ Failed to add item");
+      }
+    } catch (err) {
+      console.error("❌ ERROR:", err);
+      alert("Server error");
     }
-
-    const item = {
-      name,
-      date,
-      delivered,
-      photo,
-      vendor_name: vendorName,
-      vendor_phone: vendorPhone,
-      vendor_address: vendorAddress
-    };
-
-    addItem(item, type);
-
-    // clear form
-    setName("");
-    setDate("");
-    setDelivered("");
-    setPhoto(null);
-    setVendorName("");
-    setVendorPhone("");
-    setVendorAddress("");
-    setType("plant");
   };
 
   return (
-    <div className="form">
-
-      {/* TYPE */}
-      <select
-        value={type}
-        onChange={(e)=>setType(e.target.value)}
-      >
-        <option value="plant">Plant</option>
-        <option value="pot">Pot</option>
-        <option value="soil">Soil</option>
-        <option value="fertilizer">Fertilizer</option>
-      </select>
-
-      {/* ITEM DETAILS */}
+    <form onSubmit={handleSubmit}>
       <input
         placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        value={form.name}
+        onChange={(e) => handleChange("name", e.target.value)}
       />
 
       <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
+        placeholder="Category"
+        value={form.category}
+        onChange={(e) => handleChange("category", e.target.value)}
       />
 
       <input
+        placeholder="Price"
         type="number"
-        placeholder="Delivered Quantity"
-        value={delivered}
-        onChange={(e) => setDelivered(e.target.value)}
+        value={form.price}
+        onChange={(e) => handleChange("price", e.target.value)}
       />
 
       <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => setPhoto(e.target.files[0])}
+        placeholder="Stock"
+        type="number"
+        value={form.stock}
+        onChange={(e) => handleChange("stock", e.target.value)}
       />
 
-      {/* 🔥 VENDOR SECTION */}
+      <h3>Vendor</h3>
+
       <input
         placeholder="Vendor Name"
-        value={vendorName}
-        onChange={(e) => setVendorName(e.target.value)}
+        value={form.vendor_name}
+        onChange={(e) => handleChange("vendor_name", e.target.value)}
       />
 
       <input
-        placeholder="Vendor Phone"
-        value={vendorPhone}
-        onChange={(e) => setVendorPhone(e.target.value)}
+        placeholder="Phone"
+        value={form.vendor_phone}
+        onChange={(e) => handleChange("vendor_phone", e.target.value)}
       />
 
       <input
-        placeholder="Vendor Address"
-        value={vendorAddress}
-        onChange={(e) => setVendorAddress(e.target.value)}
+        placeholder="Address"
+        value={form.vendor_address}
+        onChange={(e) => handleChange("vendor_address", e.target.value)}
       />
 
-      <button onClick={submit}>
-        Add Item
-      </button>
+      {/* 🔴 TEMP DISABLED IMAGE FOR STABILITY */}
+      {/* <input type="file" onChange={(e) => setImage(e.target.files[0])} /> */}
 
-    </div>
+      <button type="submit">Add Item</button>
+    </form>
   );
 }
 
