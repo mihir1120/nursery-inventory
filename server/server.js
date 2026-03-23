@@ -54,14 +54,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-/* ---------- ROUTES ---------- */
+/* ---------- API ROUTES ---------- */
 
-// ✅ TEST ROUTE
-app.get("/", (req, res) => {
+// TEST
+app.get("/api", (req, res) => {
   res.send("API is running 🚀");
 });
 
-// ✅ GET ALL ITEMS
+// GET ITEMS
 app.get("/items", (req, res) => {
   db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
     if (err) {
@@ -72,7 +72,7 @@ app.get("/items", (req, res) => {
   });
 });
 
-// ✅ ADD ITEM (Works with BOTH JSON & FormData)
+// ADD ITEM
 app.post("/items", upload.single("image"), (req, res) => {
   console.log("📥 Incoming Data:", req.body);
 
@@ -122,7 +122,7 @@ app.post("/items", upload.single("image"), (req, res) => {
   );
 });
 
-// ✅ UPDATE ITEM
+// UPDATE ITEM
 app.put("/items/:id", (req, res) => {
   const {
     name,
@@ -169,7 +169,7 @@ app.put("/items/:id", (req, res) => {
   );
 });
 
-// ✅ SELL ITEM
+// SELL ITEM
 app.post("/sell/:id", (req, res) => {
   const { quantity } = req.body;
 
@@ -193,7 +193,20 @@ app.post("/sell/:id", (req, res) => {
   );
 });
 
+/* ---------- SERVE FRONTEND ---------- */
+
+// 🔥 VERY IMPORTANT
+const buildPath = path.join(__dirname, "../build");
+
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+}
+
 /* ---------- START SERVER ---------- */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on ${PORT}`);
 });
