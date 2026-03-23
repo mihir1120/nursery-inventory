@@ -16,16 +16,19 @@ app.use(express.urlencoded({ extended: true }));
 /* ---------- ENSURE UPLOADS FOLDER ---------- */
 const uploadPath = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath);
+  fs.mkdirSync(uploadPath, { recursive: true });
 }
 
-/* ---------- STATIC ---------- */
+/* ---------- STATIC FILES ---------- */
 app.use("/uploads", express.static(uploadPath));
 
 /* ---------- DATABASE ---------- */
 const db = new sqlite3.Database("./inventory.db", (err) => {
-  if (err) console.error("DB ERROR:", err.message);
-  else console.log("✅ Connected to SQLite DB");
+  if (err) {
+    console.error("❌ DB ERROR:", err.message);
+  } else {
+    console.log("✅ Connected to SQLite DB");
+  }
 });
 
 /* ---------- TABLE ---------- */
@@ -52,74 +55,80 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
+
 const upload = multer({ storage });
 
 /* ---------- API ROUTES ---------- */
 
-// TEST
+// ✅ Health check
 app.get("/api", (req, res) => {
   res.send("API is running 🚀");
 });
 
-// GET ITEMS
+// ✅ GET ITEMS
 app.get("/items", (req, res) => {
   db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
     if (err) {
-      console.log("GET ERROR:", err);
-      return res.status(500).json(err);
+      console.error("❌ GET ERROR:", err);
+      return res.status(500).json({ error: "Database error" });
     }
     res.json(rows);
   });
 });
 
-// ADD ITEM
+// ✅ ADD ITEM
 app.post("/items", upload.single("image"), (req, res) => {
-  const {
-    name,
-    category,
-    price,
-    stock,
-    vendor_name,
-    vendor_phone,
-    vendor_address,
-  } = req.body;
-
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
-
-  if (!name) {
-    return res.status(400).json({ error: "Name is required" });
-  }
-
-  const query = `
-    INSERT INTO items 
-    (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.run(
-    query,
-    [
+  try {
+    const {
       name,
       category,
       price,
       stock,
-      image,
       vendor_name,
       vendor_phone,
       vendor_address,
-    ],
-    function (err) {
-      if (err) {
-        console.log("❌ DB INSERT ERROR:", err);
-        return res.status(500).json(err);
-      }
+    } = req.body;
 
-      res.json({ success: true, id: this.lastID });
+    if (!name) {
+      return res.status(400).json({ error: "Name is required" });
     }
-  );
+
+    const image = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO items 
+      (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(
+      query,
+      [
+        name,
+        category,
+        price,
+        stock,
+        image,
+        vendor_name,
+        vendor_phone,
+        vendor_address,
+      ],
+      function (err) {
+        if (err) {
+          console.error("❌ INSERT ERROR:", err);
+          return res.status(500).json({ error: "Insert failed" });
+        }
+
+        res.json({ success: true, id: this.lastID });
+      }
+    );
+  } catch (err) {
+    console.error("❌ SERVER ERROR:", err);
+    res.status(500).json({ error: "Server crash" });
+  }
 });
 
-// UPDATE ITEM
+// ✅ UPDATE ITEM
 app.put("/items/:id", (req, res) => {
   const {
     name,
@@ -157,8 +166,8 @@ app.put("/items/:id", (req, res) => {
     ],
     function (err) {
       if (err) {
-        console.log("❌ UPDATE ERROR:", err);
-        return res.status(500).json(err);
+        console.error("❌ UPDATE ERROR:", err);
+        return res.status(500).json({ error: "Update failed" });
       }
 
       res.json({ updated: true });
@@ -166,7 +175,7 @@ app.put("/items/:id", (req, res) => {
   );
 });
 
-// SELL ITEM
+// ✅ SELL ITEM
 app.post("/sell/:id", (req, res) => {
   const { quantity } = req.body;
 
@@ -181,8 +190,8 @@ app.post("/sell/:id", (req, res) => {
     [quantity, quantity, req.params.id],
     function (err) {
       if (err) {
-        console.log("❌ SELL ERROR:", err);
-        return res.status(500).json(err);
+        console.error("❌ SELL ERROR:", err);
+        return res.status(500).json({ error: "Sell failed" });
       }
 
       res.json({ sold: true });
@@ -195,9 +204,11 @@ app.post("/sell/:id", (req, res) => {
 const buildPath = path.join(__dirname, "../build");
 
 if (fs.existsSync(buildPath)) {
+  console.log("✅ Serving React build");
+
   app.use(express.static(buildPath));
 
-  // ✅ FINAL FIX (IMPORTANT)
+  // 🔥 FINAL FIX (NO CRASH)
   app.get("*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
@@ -205,5 +216,5 @@ if (fs.existsSync(buildPath)) {
 
 /* ---------- START SERVER ---------- */
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
