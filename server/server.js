@@ -195,13 +195,13 @@ app.post("/sell/:id", (req, res) => {
 
 /* ---------- SERVE FRONTEND ---------- */
 
-// 🔥 VERY IMPORTANT
 const buildPath = path.join(__dirname, "../build");
 
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
-  app.get("*", (req, res) => {
+  // ✅ FIXED ROUTE (NO ERROR)
+  app.get("/*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
 }
