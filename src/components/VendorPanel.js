@@ -1,65 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 
-function VendorPanel({ item, updateVendor }) {
-
-  const [data, setData] = useState({});
-
-  useEffect(()=>{
-    setData(item);
-  },[item]);
-
-  if(!item) return null;
-
-  const handleChange = (field, value) => {
-    setData({
-      ...data,
-      [field]: value
-    });
-  };
-
-  const save = () => {
-    updateVendor(data);
-  };
+function VendorPanel({ item }) {
+  if (!item) return null;
 
   return (
+    <div className="vendor-info">
 
-    <div>
+      <h3 className="vendor-title">{item.name}</h3>
 
-      <h3>{item.name}</h3>
+      <div className="vendor-box">
+        <p>
+          <span>Name:</span>{" "}
+          {item.vendor_name || "Not added"}
+        </p>
 
-      <input
-        placeholder="Vendor Name"
-        value={data.vendor_name || ""}
-        onChange={(e)=>handleChange("vendor_name",e.target.value)}
-      />
+        <p>
+          <span>Phone:</span>{" "}
+          {item.vendor_phone || "Not added"}
+        </p>
 
-      <input
-        placeholder="Phone"
-        value={data.vendor_phone || ""}
-        onChange={(e)=>handleChange("vendor_phone",e.target.value)}
-      />
-
-      <input
-        placeholder="Address"
-        value={data.vendor_address || ""}
-        onChange={(e)=>handleChange("vendor_address",e.target.value)}
-      />
-
-      <button
-        onClick={save}
-        style={{
-          marginTop:"10px",
-          background:"green",
-          color:"white",
-          padding:"8px",
-          border:"none"
-        }}
-      >
-        Save Vendor
-      </button>
+        <p>
+          <span>Address:</span>{" "}
+          {item.vendor_address || "Not added"}
+        </p>
+      </div>
 
     </div>
-
   );
 }
 

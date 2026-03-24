@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 
-// ✅ AUTO SWITCH API (LOCAL + RENDER)
-const API =
-  window.location.hostname.includes("render")
-    ? "https://nursery-inventory.onrender.com"
-    : "http://localhost:5000";
+const API = process.env.REACT_APP_API || "http://localhost:5000";
 
 function AddItem({ fetchItems }) {
   const [form, setForm] = useState({
     name: "",
-    category: "",
+    category: "Plant",
+    date: "",
+    delivered: "",
     price: "",
     stock: "",
     vendor_name: "",
@@ -26,98 +24,70 @@ function AddItem({ fetchItems }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("🚀 API:", API);
-    console.log("📤 Sending Form:", form);
+    const data = new FormData();
+    Object.keys(form).forEach((key) => {
+      data.append(key, form[key]);
+    });
 
-    try {
-      // ✅ USE JSON (NO FormData → FIXES RENDER ISSUE)
-      const res = await fetch(`${API}/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
+    if (image) data.append("image", image);
 
-      const result = await res.json();
+    await fetch(`${API}/items`, {
+      method: "POST",
+      body: data,
+    });
 
-      console.log("✅ Response:", result);
-
-      if (res.ok) {
-        alert("Item Added Successfully ✅");
-
-        setForm({
-          name: "",
-          category: "",
-          price: "",
-          stock: "",
-          vendor_name: "",
-          vendor_phone: "",
-          vendor_address: "",
-        });
-
-        setImage(null);
-
-        fetchItems(); // 🔥 refresh table
-      } else {
-        alert("❌ Failed to add item");
-      }
-    } catch (err) {
-      console.error("❌ ERROR:", err);
-      alert("Server error");
-    }
+    fetchItems();
   };
 
   return (
     <form onSubmit={handleSubmit}>
+
+      {/* CATEGORY */}
+      <select
+        value={form.category}
+        onChange={(e) => handleChange("category", e.target.value)}
+      >
+        <option>Plant</option>
+        <option>Pots</option>
+        <option>Soil</option>
+        <option>Fertilizer</option>
+      </select>
+
       <input
         placeholder="Name"
-        value={form.name}
         onChange={(e) => handleChange("name", e.target.value)}
       />
 
+      {/* DATE */}
       <input
-        placeholder="Category"
-        value={form.category}
-        onChange={(e) => handleChange("category", e.target.value)}
-      />
+  type="date"
+  onChange={(e) => setForm({ ...form, date: e.target.value })}
+/>
 
       <input
-        placeholder="Price"
+        placeholder="Delivered Quantity"
         type="number"
-        value={form.price}
-        onChange={(e) => handleChange("price", e.target.value)}
+        onChange={(e) => handleChange("delivered", e.target.value)}
       />
 
-      <input
-        placeholder="Stock"
-        type="number"
-        value={form.stock}
-        onChange={(e) => handleChange("stock", e.target.value)}
-      />
+      {/* IMAGE */}
+      <input type="file" onChange={(e) => setImage(e.target.files[0])} />
 
-      <h3>Vendor</h3>
-
+      {/* VENDOR */}
       <input
         placeholder="Vendor Name"
-        value={form.vendor_name}
         onChange={(e) => handleChange("vendor_name", e.target.value)}
       />
 
       <input
-        placeholder="Phone"
-        value={form.vendor_phone}
+        placeholder="Vendor Phone"
         onChange={(e) => handleChange("vendor_phone", e.target.value)}
       />
 
       <input
-        placeholder="Address"
-        value={form.vendor_address}
+        placeholder="Vendor Address"
         onChange={(e) => handleChange("vendor_address", e.target.value)}
       />
-
-      {/* 🔴 TEMP DISABLED IMAGE FOR STABILITY */}
-      {/* <input type="file" onChange={(e) => setImage(e.target.files[0])} /> */}
 
       <button type="submit">Add Item</button>
     </form>

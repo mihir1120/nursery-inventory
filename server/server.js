@@ -13,38 +13,40 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* ---------- ENSURE UPLOADS FOLDER ---------- */
+/* ---------- UPLOADS FOLDER ---------- */
 const uploadPath = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadPath)) {
   fs.mkdirSync(uploadPath, { recursive: true });
 }
 
-/* ---------- STATIC FILES ---------- */
 app.use("/uploads", express.static(uploadPath));
 
 /* ---------- DATABASE ---------- */
 const db = new sqlite3.Database("./inventory.db", (err) => {
-  if (err) {
-    console.error("❌ DB ERROR:", err.message);
-  } else {
-    console.log("✅ Connected to SQLite DB");
-  }
+  if (err) console.error("❌ DB ERROR:", err.message);
+  else console.log("✅ Connected to SQLite DB");
 });
 
-/* ---------- TABLE ---------- */
+/* ---------- TABLE (UPDATED WITH RENTAL) ---------- */
 db.run(`
 CREATE TABLE IF NOT EXISTS items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT,
   category TEXT,
-  price REAL,
-  stock INTEGER,
+  date TEXT,
   delivered INTEGER DEFAULT 0,
+  price REAL DEFAULT 0,
+  stock INTEGER DEFAULT 0,
   sold INTEGER DEFAULT 0,
   image TEXT,
+
   vendor_name TEXT,
   vendor_phone TEXT,
-  vendor_address TEXT
+  vendor_address TEXT,
+
+  rental_name TEXT,
+  rental_phone TEXT,
+  rental_address TEXT
 )
 `);
 
@@ -58,14 +60,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-/* ---------- API ROUTES ---------- */
+/* ---------- ROUTES ---------- */
 
 // Health
 app.get("/api", (req, res) => {
   res.send("API is running 🚀");
 });
 
-// Get items
+// GET ITEMS
 app.get("/items", (req, res) => {
   db.all("SELECT * FROM items ORDER BY id DESC", [], (err, rows) => {
     if (err) {
@@ -76,38 +78,42 @@ app.get("/items", (req, res) => {
   });
 });
 
-// Add item
+// ADD ITEM
 app.post("/items", upload.single("image"), (req, res) => {
   try {
     const {
       name,
       category,
+      date,
+      delivered,
       price,
-      stock,
       vendor_name,
       vendor_phone,
       vendor_address,
     } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ error: "Name is required" });
+    if (!name || !category) {
+      return res.status(400).json({ error: "Name & category required" });
     }
 
     const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const deliveredQty = Number(delivered) || 0;
 
     db.run(
       `INSERT INTO items 
-      (name, category, price, stock, image, vendor_name, vendor_phone, vendor_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      (name, category, date, delivered, price, stock, image, vendor_name, vendor_phone, vendor_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         category,
-        price,
-        stock,
+        date || null,
+        deliveredQty,
+        Number(price) || 0,
+        deliveredQty,
         image,
-        vendor_name,
-        vendor_phone,
-        vendor_address,
+        vendor_name || "",
+        vendor_phone || "",
+        vendor_address || "",
       ],
       function (err) {
         if (err) {
@@ -124,89 +130,135 @@ app.post("/items", upload.single("image"), (req, res) => {
   }
 });
 
-// Update
-app.put("/items/:id", (req, res) => {
+/* ---------- UPDATE ITEM (🔥 WITH IMAGE + RENTAL) ---------- */
+app.put("/items/:id", upload.single("image"), (req, res) => {
   const {
     name,
     category,
+    date,
+    delivered,
     price,
     stock,
-    delivered,
     sold,
+
     vendor_name,
     vendor_phone,
     vendor_address,
+
+    rental_name,
+    rental_phone,
+    rental_address,
   } = req.body;
 
-  db.run(
-    `UPDATE items SET
-      name=?, category=?, price=?, stock=?,
-      delivered=?, sold=?,
-      vendor_name=?, vendor_phone=?, vendor_address=?
-    WHERE id=?`,
-    [
-      name,
-      category,
-      price,
-      stock,
-      delivered,
-      sold,
-      vendor_name,
-      vendor_phone,
-      vendor_address,
-      req.params.id,
-    ],
-    function (err) {
-      if (err) {
-        console.error("❌ UPDATE ERROR:", err);
-        return res.status(500).json({ error: "Update failed" });
-      }
+  let image = null;
 
-      res.json({ updated: true });
-    }
-  );
-});
-
-// Sell
-app.post("/sell/:id", (req, res) => {
-  const { quantity } = req.body;
-
-  if (!quantity) {
-    return res.status(400).json({ error: "Quantity required" });
+  if (req.file) {
+    image = `/uploads/${req.file.filename}`;
   }
 
-  db.run(
-    `UPDATE items 
-     SET sold = sold + ?, stock = stock - ? 
-     WHERE id = ?`,
-    [quantity, quantity, req.params.id],
-    function (err) {
-      if (err) {
-        console.error("❌ SELL ERROR:", err);
-        return res.status(500).json({ error: "Sell failed" });
-      }
-
-      res.json({ sold: true });
+  db.get("SELECT image FROM items WHERE id = ?", [req.params.id], (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: "Item not found" });
     }
-  );
+
+    const finalImage = image || row.image;
+
+    db.run(
+      `UPDATE items SET
+        name=?, category=?, date=?, delivered=?, price=?, stock=?, sold=?,
+        image=?,
+        vendor_name=?, vendor_phone=?, vendor_address=?,
+        rental_name=?, rental_phone=?, rental_address=?
+      WHERE id=?`,
+      [
+        name,
+        category,
+        date,
+        delivered,
+        price,
+        stock,
+        sold,
+        finalImage,
+
+        vendor_name,
+        vendor_phone,
+        vendor_address,
+
+        rental_name,
+        rental_phone,
+        rental_address,
+
+        req.params.id,
+      ],
+      function (err) {
+        if (err) {
+          console.error("❌ UPDATE ERROR:", err);
+          return res.status(500).json({ error: "Update failed" });
+        }
+
+        res.json({ updated: true });
+      }
+    );
+  });
+});
+
+/* ---------- DELETE ---------- */
+app.delete("/items/:id", (req, res) => {
+  db.run("DELETE FROM items WHERE id = ?", [req.params.id], function (err) {
+    if (err) {
+      console.error("❌ DELETE ERROR:", err);
+      return res.status(500).json({ error: "Delete failed" });
+    }
+    res.json({ deleted: true });
+  });
+});
+
+/* ---------- SELL (SAFE) ---------- */
+app.post("/sell/:id", (req, res) => {
+  const quantity = Number(req.body.quantity);
+
+  if (!quantity || quantity <= 0) {
+    return res.status(400).json({ error: "Valid quantity required" });
+  }
+
+  db.get("SELECT stock FROM items WHERE id = ?", [req.params.id], (err, row) => {
+    if (err || !row) {
+      return res.status(500).json({ error: "Item not found" });
+    }
+
+    if (row.stock < quantity) {
+      return res.status(400).json({ error: "Not enough stock" });
+    }
+
+    db.run(
+      `UPDATE items 
+       SET sold = sold + ?, stock = stock - ? 
+       WHERE id = ?`,
+      [quantity, quantity, req.params.id],
+      function (err) {
+        if (err) {
+          console.error("❌ SELL ERROR:", err);
+          return res.status(500).json({ error: "Sell failed" });
+        }
+
+        res.json({ sold: true });
+      }
+    );
+  });
 });
 
 /* ---------- SERVE FRONTEND ---------- */
-
 const buildPath = path.join(__dirname, "../build");
 
 if (fs.existsSync(buildPath)) {
-  console.log("✅ Serving React build");
-
   app.use(express.static(buildPath));
 
-  // ✅ FINAL FIX (NO CRASH EVER)
   app.use((req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
 }
 
-/* ---------- START SERVER ---------- */
+/* ---------- START ---------- */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
