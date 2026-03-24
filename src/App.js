@@ -5,10 +5,7 @@ import VendorPanel from "./components/VendorPanel";
 import RentalPanel from "./components/RentalPanel"; // ✅ keep this
 import "./App.css";
 
-const API =
-  window.location.hostname.includes("render")
-    ? "https://nursery-inventory.onrender.com"
-    : "http://localhost:5000";
+const API = "https://nursery-inventory.onrender.com";
 
 function App() {
   const [items, setItems] = useState([]);

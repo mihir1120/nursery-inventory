@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API = process.env.REACT_APP_API || "http://localhost:5000";
+const API = "https://nursery-inventory.onrender.com";
 
 function InventoryTable({ items, fetchItems, setSelectedItem, setRentalItem }) {
 
